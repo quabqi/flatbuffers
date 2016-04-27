@@ -99,6 +99,14 @@ class Monster extends Table
     }
 
     /**
+     * @return string
+     */
+    public function getInventoryBytes()
+    {
+        return $this->__vector_as_bytes(14);
+    }
+
+    /**
      * @return sbyte
      */
     public function getColor()
@@ -210,6 +218,14 @@ class Monster extends Table
         return $o != 0 ? $this->__vector_len($o) : 0;
     }
 
+    /**
+     * @return string
+     */
+    public function getTestnestedflatbufferBytes()
+    {
+        return $this->__vector_as_bytes(30);
+    }
+
     public function getTestempty()
     {
         $obj = new Stat();
@@ -318,21 +334,48 @@ class Monster extends Table
     }
 
     /**
+     * @return float
+     */
+    public function getTestf()
+    {
+        $o = $this->__offset(54);
+        return $o != 0 ? $this->bb->getFloat($o + $this->bb_pos) : 3.14159;
+    }
+
+    /**
+     * @return float
+     */
+    public function getTestf2()
+    {
+        $o = $this->__offset(56);
+        return $o != 0 ? $this->bb->getFloat($o + $this->bb_pos) : 3.0;
+    }
+
+    /**
+     * @return float
+     */
+    public function getTestf3()
+    {
+        $o = $this->__offset(58);
+        return $o != 0 ? $this->bb->getFloat($o + $this->bb_pos) : 0.0;
+    }
+
+    /**
      * @param FlatBufferBuilder $builder
      * @return void
      */
     public static function startMonster(FlatBufferBuilder $builder)
     {
-        $builder->StartObject(25);
+        $builder->StartObject(28);
     }
 
     /**
      * @param FlatBufferBuilder $builder
      * @return Monster
      */
-    public static function createMonster(FlatBufferBuilder $builder, $pos, $mana, $hp, $name, $inventory, $color, $test_type, $test, $test4, $testarrayofstring, $testarrayoftables, $enemy, $testnestedflatbuffer, $testempty, $testbool, $testhashs32_fnv1, $testhashu32_fnv1, $testhashs64_fnv1, $testhashu64_fnv1, $testhashs32_fnv1a, $testhashu32_fnv1a, $testhashs64_fnv1a, $testhashu64_fnv1a, $testarrayofbools)
+    public static function createMonster(FlatBufferBuilder $builder, $pos, $mana, $hp, $name, $inventory, $color, $test_type, $test, $test4, $testarrayofstring, $testarrayoftables, $enemy, $testnestedflatbuffer, $testempty, $testbool, $testhashs32_fnv1, $testhashu32_fnv1, $testhashs64_fnv1, $testhashu64_fnv1, $testhashs32_fnv1a, $testhashu32_fnv1a, $testhashs64_fnv1a, $testhashu64_fnv1a, $testarrayofbools, $testf, $testf2, $testf3)
     {
-        $builder->startObject(25);
+        $builder->startObject(28);
         self::addPos($builder, $pos);
         self::addMana($builder, $mana);
         self::addHp($builder, $hp);
@@ -357,6 +400,9 @@ class Monster extends Table
         self::addTesthashs64Fnv1a($builder, $testhashs64_fnv1a);
         self::addTesthashu64Fnv1a($builder, $testhashu64_fnv1a);
         self::addTestarrayofbools($builder, $testarrayofbools);
+        self::addTestf($builder, $testf);
+        self::addTestf2($builder, $testf2);
+        self::addTestf3($builder, $testf3);
         $o = $builder->endObject();
         $builder->required($o, 10);  // name
         return $o;
@@ -739,6 +785,36 @@ class Monster extends Table
     public static function startTestarrayofboolsVector(FlatBufferBuilder $builder, $numElems)
     {
         $builder->startVector(1, $numElems, 1);
+    }
+
+    /**
+     * @param FlatBufferBuilder $builder
+     * @param float
+     * @return void
+     */
+    public static function addTestf(FlatBufferBuilder $builder, $testf)
+    {
+        $builder->addFloatX(25, $testf, 3.14159);
+    }
+
+    /**
+     * @param FlatBufferBuilder $builder
+     * @param float
+     * @return void
+     */
+    public static function addTestf2(FlatBufferBuilder $builder, $testf2)
+    {
+        $builder->addFloatX(26, $testf2, 3.0);
+    }
+
+    /**
+     * @param FlatBufferBuilder $builder
+     * @param float
+     * @return void
+     */
+    public static function addTestf3(FlatBufferBuilder $builder, $testf3)
+    {
+        $builder->addFloatX(27, $testf3, 0.0);
     }
 
     /**

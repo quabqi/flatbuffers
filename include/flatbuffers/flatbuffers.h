@@ -91,6 +91,14 @@
 #else
   #define FLATBUFFERS_FINAL_CLASS
 #endif
+
+#if (!defined(_MSC_VER) || _MSC_VER >= 1900) && \
+    (!defined(__GNUC__) || (__GNUC__ * 100 + __GNUC_MINOR__ >= 406))
+  #define FLATBUFFERS_CONSTEXPR constexpr
+#else
+  #define FLATBUFFERS_CONSTEXPR
+#endif
+
 /// @endcond
 
 /// @file
@@ -110,6 +118,9 @@ typedef int32_t soffset_t;
 typedef uint16_t voffset_t;
 
 typedef uintmax_t largest_scalar_t;
+
+// In 32bits, this evaluates to 2GB - 1
+#define FLATBUFFERS_MAX_BUFFER_SIZE ((1ULL << (sizeof(soffset_t) * 8 - 1)) - 1)
 
 // Pointer to relinquished memory.
 typedef std::unique_ptr<uint8_t, std::function<void(uint8_t * /* unused */)>>
@@ -486,7 +497,7 @@ class vector_downward {
     cur_ -= len;
     // Beyond this, signed offsets may not have enough range:
     // (FlatBuffers > 2GB not supported).
-    assert(size() < (1UL << (sizeof(soffset_t) * 8 - 1)) - 1);
+    assert(size() < FLATBUFFERS_MAX_BUFFER_SIZE);
     return cur_;
   }
 
@@ -531,7 +542,7 @@ class vector_downward {
 inline voffset_t FieldIndexToOffset(voffset_t field_id) {
   // Should correspond to what EndTable() below builds up.
   const int fixed_fields = 2;  // Vtable size and Object Size.
-  return (field_id + fixed_fields) * sizeof(voffset_t);
+  return static_cast<voffset_t>((field_id + fixed_fields) * sizeof(voffset_t));
 }
 
 // Computes how many bytes you'd have to pad to be able to write an
@@ -712,7 +723,7 @@ FLATBUFFERS_FINAL_CLASS
     Align(sizeof(uoffset_t));
     // Offset must refer to something already in buffer.
     assert(off && off <= GetSize());
-    return GetSize() - off + sizeof(uoffset_t);
+    return GetSize() - off + static_cast<uoffset_t>(sizeof(uoffset_t));
   }
 
   void NotNested() {
@@ -1040,8 +1051,11 @@ FLATBUFFERS_FINAL_CLASS
                                       uint8_t **buf) {
     NotNested();
     StartVector(len, elemsize);
-    *buf = buf_.make_space(len * elemsize);
-    return EndVector(len);
+    buf_.make_space(len * elemsize);
+    auto vec_start = GetSize();
+    auto vec_end = EndVector(len);
+    *buf = buf_.data_at(vec_start);
+    return vec_end;
   }
 
   /// @brief Specialized version of `CreateVector` for non-copying use cases.
@@ -1109,14 +1123,14 @@ FLATBUFFERS_FINAL_CLASS
   bool force_defaults_;  // Serialize values equal to their defaults anyway.
 
   struct StringOffsetCompare {
-    StringOffsetCompare(const vector_downward &buf) : buf_(buf) {}
+    StringOffsetCompare(const vector_downward &buf) : buf_(&buf) {}
     bool operator() (const Offset<String> &a, const Offset<String> &b) const {
-      auto stra = reinterpret_cast<const String *>(buf_.data_at(a.o));
-      auto strb = reinterpret_cast<const String *>(buf_.data_at(b.o));
+      auto stra = reinterpret_cast<const String *>(buf_->data_at(a.o));
+      auto strb = reinterpret_cast<const String *>(buf_->data_at(b.o));
       return strncmp(stra->c_str(), strb->c_str(),
                      std::min(stra->size(), strb->size()) + 1) < 0;
     }
-    const vector_downward &buf_;
+    const vector_downward *buf_;
   };
 
   // For use with CreateSharedString. Instantiated on first use only.
@@ -1162,7 +1176,9 @@ class Verifier FLATBUFFERS_FINAL_CLASS {
 
   // Verify any range within the buffer.
   bool Verify(const void *elem, size_t elem_len) const {
-    return Check(elem_len <= (size_t) (end_ - buf_) && elem >= buf_ && elem <= end_ - elem_len);
+    return Check(elem_len <= (size_t) (end_ - buf_) &&
+                 elem >= buf_ &&
+                 elem <= end_ - elem_len);
   }
 
   // Verify a range indicated by sizeof(T).
@@ -1205,6 +1221,9 @@ class Verifier FLATBUFFERS_FINAL_CLASS {
     // Check the whole array. If this is a string, the byte past the array
     // must be 0.
     auto size = ReadScalar<uoffset_t>(vec);
+    auto max_elems = FLATBUFFERS_MAX_BUFFER_SIZE / elem_size;
+    if (!Check(size < max_elems))
+      return false;  // Protect against byte_size overflowing.
     auto byte_size = sizeof(size) + elem_size * size;
     *end = vec + byte_size;
     return Verify(vec, byte_size);

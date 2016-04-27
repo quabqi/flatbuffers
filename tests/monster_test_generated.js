@@ -678,10 +678,34 @@ MyGame.Example.Monster.prototype.testarrayofboolsArray = function() {
 };
 
 /**
+ * @returns {number}
+ */
+MyGame.Example.Monster.prototype.testf = function() {
+  var offset = this.bb.__offset(this.bb_pos, 54);
+  return offset ? this.bb.readFloat32(this.bb_pos + offset) : 3.14159;
+};
+
+/**
+ * @returns {number}
+ */
+MyGame.Example.Monster.prototype.testf2 = function() {
+  var offset = this.bb.__offset(this.bb_pos, 56);
+  return offset ? this.bb.readFloat32(this.bb_pos + offset) : 3.0;
+};
+
+/**
+ * @returns {number}
+ */
+MyGame.Example.Monster.prototype.testf3 = function() {
+  var offset = this.bb.__offset(this.bb_pos, 58);
+  return offset ? this.bb.readFloat32(this.bb_pos + offset) : 0.0;
+};
+
+/**
  * @param {flatbuffers.Builder} builder
  */
 MyGame.Example.Monster.startMonster = function(builder) {
-  builder.startObject(25);
+  builder.startObject(28);
 };
 
 /**
@@ -987,6 +1011,30 @@ MyGame.Example.Monster.createTestarrayofboolsVector = function(builder, data) {
  */
 MyGame.Example.Monster.startTestarrayofboolsVector = function(builder, numElems) {
   builder.startVector(1, numElems, 1);
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {number} testf
+ */
+MyGame.Example.Monster.addTestf = function(builder, testf) {
+  builder.addFieldFloat32(25, testf, 3.14159);
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {number} testf2
+ */
+MyGame.Example.Monster.addTestf2 = function(builder, testf2) {
+  builder.addFieldFloat32(26, testf2, 3.0);
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {number} testf3
+ */
+MyGame.Example.Monster.addTestf3 = function(builder, testf3) {
+  builder.addFieldFloat32(27, testf3, 0.0);
 };
 
 /**
